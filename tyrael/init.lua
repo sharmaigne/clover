@@ -1,5 +1,4 @@
-local modpath = "tyrael."
-local matrix = require(modpath .. "matrix")
+local matrix = require("tyrael.matrix")
 
 return {
   matrix = matrix
