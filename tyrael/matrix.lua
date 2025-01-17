@@ -1,25 +1,42 @@
 -- Library for working with grids/matrices, also known MxN arrays
 
+---@overload fun(mat: table[]): Matrix
 local M = {}
-M.mt = {}
+
+setmetatable(M --[[@as table]], {
+  __call = function(_, mat)
+    return M.new(mat)
+  end
+})
+
+M._mt = {}
 
 ---@class Matrix
 ---@field rowsize integer
 ---@field colsize integer
+---@operator add(integer | Matrix): Matrix
+---@operator mul(integer | Matrix): Matrix
 local matrix = {
   rowsize = 0,
   colsize = 0
 }
-M.mt.__index = matrix
+M._mt.__index = matrix
 
-function M.mt.__add(a, b)
-  if getmetatable(a) ~= M.mt then
+function M._mt.__add(a, b)
+  if getmetatable(a) ~= M._mt then
     a, b = b, a
   end
   return a:add(b)
 end
 
-function M.mt.__tostring(self)
+function M._mt.__mul(a, b)
+  if getmetatable(a) ~= M._mt then
+    a, b = b, a
+  end
+  return a:mul(b)
+end
+
+function M._mt.__tostring(self)
   local ret = "{\n"
 
   for _, r in ipairs(self) do
@@ -45,7 +62,7 @@ function M.new(mat)
     rowsize = #mat[1],
     colsize = #mat
   }
-  setmetatable(ret, M.mt)
+  setmetatable(ret, M._mt)
 
   for _, v in ipairs(mat) do
     assert(#v == ret.rowsize, "Row lengths should be equal for argument to Matrix.new.")
@@ -83,11 +100,11 @@ end
 
 ---Adds two matrices together by component,
 ---If the parameter is an integer, add the scalar to each component,
----returns a new Matrix
+---returns a new Matrix.
 ---@param other Matrix | integer
 ---@return Matrix
 function matrix:add(other)
-  local scalar_flag
+  local scalar_flag = false
   if type(other) == "number" then
     scalar_flag = true
   else
@@ -114,4 +131,29 @@ function matrix:add(other)
   return M.new(ret)
 end
 
-return M.new
+---Multiplies a matrix and scalar.
+---If the parameter is a matrix, performs dot product.
+---returns a new Matrix.
+---@param other integer
+---@return Matrix
+function matrix:mul(other)
+  local scalar_flag = false
+  if type(other) == "number" then
+    scalar_flag = true
+  end
+
+  local ret = {}
+
+  for i = 1, self.colsize do
+    ret[i] = {}
+    for j = 1, self.rowsize do
+      if scalar_flag then
+        ret[i][j] = self[i][j] * other
+      end
+    end
+  end
+
+  return M.new(ret)
+end
+
+return M
