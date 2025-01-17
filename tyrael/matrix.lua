@@ -14,12 +14,15 @@ M._mt = {}
 ---@class Matrix
 ---@field rowsize integer
 ---@field colsize integer
+---@field shape [integer, integer]
 ---@operator add(integer | Matrix): Matrix
 ---@operator mul(integer | Matrix): Matrix
 local matrix = {
   rowsize = 0,
   colsize = 0
 }
+
+-- Metamethods {{{
 M._mt.__index = matrix
 
 function M._mt.__add(a, b)
@@ -51,6 +54,9 @@ function M._mt.__tostring(self)
   return ret
 end
 
+-- }}}
+
+-- Constructor {{{
 ---Create a copy of a 2d array into a Matrix type.
 ---@param mat table[]
 ---@return Matrix
@@ -62,6 +68,7 @@ function M.new(mat)
     rowsize = #mat[1],
     colsize = #mat
   }
+  ret.shape = { ret.colsize, ret.rowsize }
   setmetatable(ret, M._mt)
 
   for _, v in ipairs(mat) do
@@ -77,6 +84,8 @@ function M.new(mat)
 
   return ret
 end
+
+-- }}}
 
 ---Transposes an NxN matrix (not in-place).
 ---@return Matrix
@@ -131,26 +140,42 @@ function matrix:add(other)
   return M.new(ret)
 end
 
+local function dot_product(ret, a, b)
+  for i = 1, a.colsize do
+    ret[i] = {}
+    for j = 1, a.colsize do
+      ret[i][j] = 0
+      for k = 1, a.rowsize do
+        ret[i][j] = ret[i][j] + a[i][k] * b[k][j]
+      end
+    end
+  end
+end
+
 ---Multiplies a matrix and scalar.
 ---If the parameter is a matrix, performs dot product.
 ---returns a new Matrix.
----@param other integer
+---@param other Matrix | integer
 ---@return Matrix
 function matrix:mul(other)
   local scalar_flag = false
   if type(other) == "number" then
     scalar_flag = true
+  else
+    assert(self.rowsize == other.colsize, "Matrices must follow MxN . NxP = MxP dimensions.")
   end
 
   local ret = {}
 
-  for i = 1, self.colsize do
-    ret[i] = {}
-    for j = 1, self.rowsize do
-      if scalar_flag then
+  if scalar_flag then
+    for i = 1, self.colsize do
+      ret[i] = {}
+      for j = 1, self.rowsize do
         ret[i][j] = self[i][j] * other
       end
     end
+  else
+    dot_product(ret, self, other)
   end
 
   return M.new(ret)
