@@ -1,4 +1,4 @@
--- Library for working with grids/matrices, also known as 2-dimensional arrays
+-- Library for working with grids/matrices, also known MxN arrays
 
 local M = {}
 M.mt = {}
@@ -11,6 +11,13 @@ local matrix = {
   colsize = 0
 }
 M.mt.__index = matrix
+
+function M.mt.__add(a, b)
+  if getmetatable(a) ~= M.mt then
+    a, b = b, a
+  end
+  return a:add(b)
+end
 
 function M.mt.__tostring(self)
   local ret = "{\n"
@@ -54,20 +61,57 @@ function M.new(mat)
   return ret
 end
 
----Transposes an NxN matrix in-place.
+---Transposes an NxN matrix (not in-place).
 ---@return Matrix
 function matrix:transpose()
-  assert(self.rowsize == self.colsize, "Row and column length must be equal for Matrix.transpose")
+  assert(self.rowsize == self.colsize, "Row and column length must be equal for Matrix.transpose.")
+
+  local ret = {}
 
   for i = 1, self.colsize do
+    ret[i] = {}
+  end
+  for i = 1, self.colsize do
     for j = i, self.rowsize do
-      local temp = self[i][j]
-      self[i][j] = self[j][i]
-      self[j][i] = temp
+      ret[i][j] = self[j][i]
+      ret[j][i] = self[i][j]
     end
   end
 
-  return self
+  return M.new(ret)
+end
+
+---Adds two matrices together by component,
+---If the parameter is an integer, add the scalar to each component,
+---returns a new Matrix
+---@param other Matrix | integer
+---@return Matrix
+function matrix:add(other)
+  local scalar_flag
+  if type(other) == "number" then
+    scalar_flag = true
+  else
+    assert(self.rowsize == other.rowsize and self.colsize == other.colsize,
+      "Matrix dimensions must match for Matrix.add.")
+  end
+
+  local ret = {}
+
+  for i = 1, self.colsize do
+    ret[i] = {}
+    for j = 1, self.rowsize do
+      local addend
+      if scalar_flag then
+        addend = other
+      else
+        addend = other[i][j]
+      end
+
+      ret[i][j] = self[i][j] + addend
+    end
+  end
+
+  return M.new(ret)
 end
 
 return M.new
