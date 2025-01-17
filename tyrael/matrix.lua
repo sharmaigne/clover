@@ -156,4 +156,24 @@ function matrix:mul(other)
   return M.new(ret)
 end
 
+---Return an identity matrix of size n.
+---@param n integer
+---@return Matrix
+function M.identity(n)
+  local ret = {}
+
+  for i = 1, n do
+    ret[i] = {}
+    for j = 1, n do
+      if j == i then
+        ret[i][j] = 1
+      else
+        ret[i][j] = 0
+      end
+    end
+  end
+
+  return M.new(ret)
+end
+
 return M
